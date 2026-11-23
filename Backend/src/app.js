@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import morgan from "morgan";
 import authRoutes from "./routes/auth.routes.js";
+import songRoutes from "./routes/song.routes.js"
 
 
 
@@ -16,6 +17,8 @@ app.use(cors({
     credentials: true
 }));
 app.use("/api/auth",authRoutes)
+
+app.use("/api/songs",songRoutes)
 
 
 
