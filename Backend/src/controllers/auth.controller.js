@@ -23,7 +23,7 @@ async function register(req,res){
         }
         const hashedPassword = await bcrypt.hash(password,10)
 
-        const crateUser = await User.create({
+        const user = await User.create({
             username,
             email,
             password: hashedPassword
@@ -95,7 +95,7 @@ async function login(req,res){
         return res.status(200).json({
             success: true,
             message: "Login successful",
-            token,
+         
             user:{
                 id:user._id,
                 username: user.username,
@@ -124,8 +124,29 @@ async function logout(req,res){
         message: "Logout successful"
     })
 }
+async function getMe(req,res){
+    try{
+        const user = req.user
+
+        return res.status(200).json({
+            success: true,
+           user: {
+                id: user?._id,
+                username: user?.username,
+                email: user?.email
+            }
+        })
+    }catch(error){
+        console.log("Getme error",error)
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        })
+    }
+}
 export {
     register,
     login,
-    logout
+    logout,
+    getMe
 }
