@@ -80,8 +80,109 @@ async function getMySongs(req,res){
     }
 }
 
+async function deleteSong(req,res){
+
+    try{
+
+        const {songId} = req.params;
+
+        const song = await Song.findOne({
+            _id: songId,
+            userId: req.user.id
+        });
+
+        if(!song){
+            return res.status(404).json({
+                success: false,
+                message: "Song not found"
+            })
+        }
+
+        if(song.audioFileId){
+            await storageService.deleteFile(song.audioFileId);
+        }
+
+        await Song.findByIdAndDelete(songId)
+
+        return res.status(200).json({
+            success: true,
+            message: "Song deleted successfully"
+        }) 
+
+    }catch(error){
+        console.error("Delete song error",error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to delete song"
+        })
+    }
+}
+
+async function updateSong(req,res){
+
+    try{
+
+        const {songId} = req.params;
+
+        const {title,atirst,finalMood} = req.body;
+
+        const allowedMoods = ["happy","sad","angry","neutral","relaxed"];
+
+        const song = await Song.findOne({
+            _id: songId,
+            userId: req.user.id
+        });
+
+        if(!song){
+            return res.status(404).json({
+                success: "false",
+                message: "song not found"
+            })
+        }
+
+        if(title !== undefined){
+            song.title = title
+        }
+
+        if(atirst !== undefined){
+            song.atirst = atirst
+        }
+
+        if(finalMood !== undefined){
+
+            if(!allowedMoods.includes(finalMood)){
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid mood"
+                })
+            }
+            song.finalMood = finalMood;
+            song.moodSourse = "user"
+        }
+
+        await song.save()
+
+        return res.status(200).json({
+            success: true,
+            message: "Song updated successfully",
+            song
+        })
+    }catch(error){
+        console.error("updated song error",error)
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update song"
+        })
+
+    }
+}
+
 export {
     
     uploadSong,
-    getMySongs    
+    getMySongs,
+    deleteSong,
+    updateSong    
 }

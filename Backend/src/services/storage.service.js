@@ -8,7 +8,13 @@ async function uploadFile({buffer,filename,folder}){
     });
     return response;
 }
+async function deleteFile(fileId){
+    const response = await imagekit.deleteFile(fileId)
+
+    return response
+}
 
 export default {
-    uploadFile
+    uploadFile,
+    deleteFile
 };
