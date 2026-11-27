@@ -1,7 +1,10 @@
 import Song from '../model/song.model.js';
 import storageService from '../services/storage.service.js'
+import aiService from '../services/ai.service.js'
 
 async function uploadSong(req,res){
+
+    let uploadedAudioFile = null
 
     try{
         if(!req.file){
@@ -11,7 +14,7 @@ async function uploadSong(req,res){
             })
         }
         
-        const {title,atirst} = req.body
+        const {title,artist} = req.body
 
         if(!title){
             return res.status(400).json({
@@ -20,12 +23,28 @@ async function uploadSong(req,res){
             })
         }
 
-        // Upload audio to imagekit
+        
 
-        const audioFile = await storageService.uploadFile({
+        // analyze audio using python ai service
+
+        const aiResult = await aiService.analyzeSong(
+            req.file.buffer,
+            req.file.originalname
+        );
+
+        if(!aiResult.success || !aiResult.features){
+
+            throw new Error("Audio analysis failed")
+        }
+
+        const features = aiResult.features;
+
+        // upload audio in imagekit
+
+        uploadedAudioFile = await storageService.uploadFile({
             buffer: req.file.buffer,
             filename: `${Date.now()}-${req.file.originalname}`,
-            folder: '/moodify/songs'
+            folder:"/moodify/song"
         })
 
         // save song info in mongodb
@@ -33,9 +52,17 @@ async function uploadSong(req,res){
         const song = await Song.create({
             userId: req.user.id,
             title,
-            atirst: atirst || "Unknown Atrist",
-            audioUrl:audioFile.url,
-            audioFileId:audioFile.fileId,
+            artist: artist || "Unknown Atrist",
+            audioUrl:uploadedAudioFile.url,
+            audioFileId:uploadedAudioFile.fileId,
+            duration: features.duration,
+
+            audioFeatures:{
+                tempo: features.tempo,
+                energy: features.energy,
+                spectralCentroid: features.spectral_centroid,
+                zeroCrossingRate: features.zero_crossing_rate
+            },
             suggestedMood: "neutral",
             finalMood: "neutral",
             moodSourse: "user"
@@ -43,16 +70,27 @@ async function uploadSong(req,res){
 
         return res.status(201).json({
             success: true,
-            message:'Song uploaded successfully',
+            message:'Song uploaded and analyze  successfully',
             song
         })
 
     }catch(error){
         console.error("Song upload error",error)
 
+        if(uploadedAudioFile?.fileId){
+            try{
+                await storageService.deleteFile(
+                    uploadedAudioFile.fileId
+                );
+
+            }catch(deleteError){
+                consloe.error("Imagekit cleanup failed",deleteError)
+            }
+        }
+
         return res.status(500).json({
             success: false,
-            message: "Failed to upload song",
+            message: "Failed to upload analyze song",
             error: error.message
         })
     }

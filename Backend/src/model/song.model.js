@@ -27,6 +27,26 @@ const songSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    audioFeatures:{
+
+        tempo:{
+            type:Number,
+            default:0
+        },
+        energy:{
+            type: Number,
+            default: 0
+        },
+        spectralCentroid:{
+            type: Number,
+            default:0
+        },
+        zeroCrossingRate:{
+            type: Number,
+            default:0
+        },
+
+    },
     suggestedMood:{
         type: String,
         enum:["happy","sad","angry","neutral"],
